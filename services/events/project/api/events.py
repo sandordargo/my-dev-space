@@ -36,6 +36,7 @@ def index():
         end = request.form["end"]
         duration = request.form["duration"]
         topics = request.form["topics"]
+        location = request.form["location"]
         entry = request.form["entry"]
         category = request.form["category"]
         source = request.form["source"]
@@ -51,6 +52,7 @@ def index():
             duration=duration,
             topics=topic_list,
             entry=entry,
+            location=location,
             category=category,
             source=source,
         )
@@ -87,6 +89,7 @@ def add_event():
     end = post_data.get("end")
     duration = post_data.get("duration")
     topics = post_data.get("topics")
+    location = post_data.get("location")
     entries = post_data.get("entry")
     category = post_data.get("category")
     source = post_data.get("source")
@@ -106,6 +109,7 @@ def add_event():
                 duration=duration,
                 topics=topics_list,
                 entry=entry_list,
+                location=location,
                 category=category,
                 source=source,
             )
@@ -149,19 +153,26 @@ def get_all_events():
 
     page = request.args.get("page", 1, type=int)
     page_size = request.args.get("page_size", DEFAULT_PAGE_SIZE, type=int)
+    location = request.args.get("location", "belfast", type=str)
+
+    location = location.lower()
 
     current_time = datetime.utcnow()
     recent_past = current_time - timedelta(hours=6)
 
     upcoming_events = (
-        Event.query.filter(Event.start > current_time)
+        Event.query.filter(and_(Event.location == location, Event.start > current_time))
         .order_by(Event.start)
         .paginate(page, page_size, error_out=False)
         .items
     )
     recent_events = (
         Event.query.filter(
-            and_(Event.start <= current_time, Event.start >= recent_past)
+            and_(
+                Event.location == location,
+                Event.start <= current_time,
+                Event.start >= recent_past,
+            )
         )
         .filter(Event.deleted is None)
         .order_by(Event.start)
